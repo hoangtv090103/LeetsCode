@@ -1,5 +1,7 @@
 package com.example.leetscode.model;
 
+import java.time.LocalDate;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -12,27 +14,39 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    private String fullName;
     private String username;
     private String password;
     private String email;
     private String token;
 
+    private LocalDate createdAt;
+    private LocalDate updatedAt;
+
     public User() {
     }
 
-    public User(String username, String password, String email, String token) {
+    public User(String fullName, String username, String password, String email, String token) {
+        this.fullName = fullName;
         this.username = username;
         this.password = password;
         this.email = email;
         this.token = token;
+
+        this.createdAt = LocalDate.now();
+        this.updatedAt = LocalDate.now();
     }
 
     public Long getId() {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public String getFullName() {
+        return fullName;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
     }
 
     public String getUsername() {
@@ -65,6 +79,18 @@ public class User {
 
     public void setToken(String token) {
         this.token = token;
+    }
+
+    public LocalDate getCreatedAt() {
+        return createdAt;
+    }
+
+    public LocalDate getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt() {
+        this.updatedAt = LocalDate.now();
     }
 
     @Override
