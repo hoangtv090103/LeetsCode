@@ -7,6 +7,7 @@ import java.net.http.HttpResponse;
 import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -21,7 +22,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
-
 
 import com.example.leetscode.model.Language;
 import com.example.leetscode.service.LanguageService;
@@ -40,7 +40,6 @@ public class LanguageController {
     private String X_RapidAPI_Host;
 
     public List<Language> getLanguagesFromJudge0() throws Exception {
-
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(judge0UrlLanguage)
@@ -54,7 +53,7 @@ public class LanguageController {
         ObjectMapper objectMapper = new ObjectMapper();
         Language[] languages = objectMapper.readValue(jsonString, Language[].class);
 
-        return Arrays.asList(languages);
+        return List.of(languages);
     }
 
     @Autowired
@@ -64,7 +63,6 @@ public class LanguageController {
         this.languageService = languageService;
     }
 
-
     @GetMapping("/")
     public ResponseEntity<List<Language>> getAllLanguages() {
         List<Language> languages = languageService.getAllLanguages();
@@ -73,10 +71,10 @@ public class LanguageController {
 
     // Get by id
     @GetMapping("/{id}")
-    public ResponseEntity<Language> getLanguageById(@PathVariable Long id) {
+    public ResponseEntity<Optional<Language>> getLanguageById(@PathVariable Long id) {
         try {
-            Language language = languageService.getLanguageById(id);
-            if (language == null) {
+            Optional<Language> language = languageService.getLanguageById(id);
+            if (language.isEmpty()) {
                 return ResponseEntity.notFound().build();
             }
             return ResponseEntity.ok(language);
@@ -88,20 +86,23 @@ public class LanguageController {
     @PostMapping("/")
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<String> addLanguage(@RequestBody Language language) {
-        if (language.getName() == null) {
-            try {
+        try {
+            if (language.getName() == null) {
                 List<Language> languages = getLanguagesFromJudge0();
-
-                languageService.addAllLanguages(languages);
-                
+                for (Language lang : languages) {
+                    if (languageService.getLanguageById(lang.getId()).isPresent()) {
+                        continue;
+                    }
+                    languageService.addLanguage(lang);
+                }
                 return ResponseEntity.ok("Languages added successfully");
-            } catch (Exception e) {
-                return ResponseEntity.badRequest().body("Error: " + e.getMessage());
-            }
 
+            }
+            languageService.addLanguage(language);
+            return ResponseEntity.ok("Language added successfully");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
         }
-        languageService.addLanguage(language);
-        return ResponseEntity.ok("Language added successfully");
     }
 
     @PutMapping("/{id}")

@@ -12,15 +12,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
-enum Status {
-    ACCEPTED,
-    WRONG_ANSWER,
-    TIME_LIMIT_EXCEEDED,
-    MEMORY_LIMIT_EXCEEDED,
-    RUNTIME_ERROR,
-    COMPILATION_ERROR
-}
-
 @Entity
 @Table(name = "submissions")
 public class Submission {
@@ -37,30 +28,35 @@ public class Submission {
     @JoinColumn(name = "problem_id")
     private Problem problem;
 
-    private String code;
+    private String sourceCode;
 
     @ManyToOne
     @JoinColumn(name = "language_id")
     private Language language;
 
-    @Enumerated(EnumType.STRING)
+    @ManyToOne
+    @JoinColumn(name = "status_id")
     private Status status;
+
+    private String stdin;
+
+    private String token;
 
     private LocalDate sumbittedAt;
     private LocalDate updatedAt;
 
-
     public Submission() {
     }
 
-    public Submission(User user, Problem problem, String code, Language language) {
+    public Submission(User user, Problem problem, String code, Language language, Status status, String token) {
         this.user = user;
         this.problem = problem;
-        this.code = code;
+        this.sourceCode = code;
         this.language = language;
-        this.status = Status.WRONG_ANSWER;
+        this.status = status;
         this.sumbittedAt = LocalDate.now();
         this.updatedAt = LocalDate.now();
+        this.token = token;
     }
 
     public Long getId() {
@@ -75,8 +71,8 @@ public class Submission {
         return problem;
     }
 
-    public String getCode() {
-        return code;
+    public String getSourceCode() {
+        return sourceCode;
     }
 
     public Language getLanguage() {
@@ -95,8 +91,8 @@ public class Submission {
         return updatedAt;
     }
 
-    public void setCode(String code) {
-        this.code = code;
+    public void setSourceCode(String sourceCode) {
+        this.sourceCode = sourceCode;
     }
 
     public void setLanguage(Language language) {
@@ -111,13 +107,21 @@ public class Submission {
         this.updatedAt = LocalDate.now();
     }
 
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
+    }
+
     @Override
     public String toString() {
         return "Submission{" +
                 "id=" + id +
                 ", user=" + user +
                 ", problemId=" + problem.getId() +
-                ", code='" + code + '\'' +
+                ", code='" + sourceCode + '\'' +
                 ", language=" + language +
                 ", status=" + status +
                 ", sumbittedAt=" + sumbittedAt +

@@ -29,7 +29,7 @@ public class ProblemController {
 
     @GetMapping("/")
     public ResponseEntity<List<Problem>> getAllProblems() {
-        return ResponseEntity.ok(problemService.getAllProblems());5
+        return ResponseEntity.ok(problemService.getAllProblems());
     }
 
     @PostMapping("/")

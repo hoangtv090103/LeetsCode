@@ -18,16 +18,14 @@ public class Language {
     // trị cho khóa chính dựa trên cơ chế tự tăng của cơ sở dữ liệu.
     private Long id;
     private String name;
-    private LocalDate createdAt;
-    private LocalDate updatedAt;
+    private LocalDate createdAt = LocalDate.now();
+    private LocalDate updatedAt = LocalDate.now();
 
     public Language() {
     }
 
     public Language(String name) {
         this.name = name;
-        this.createdAt = LocalDate.now();
-        this.updatedAt = LocalDate.now();
     }
 
     public Long getId() {
