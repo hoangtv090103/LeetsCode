@@ -2,6 +2,7 @@ package com.example.leetscode.model;
 
 import java.time.LocalDate;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -19,26 +20,29 @@ public class Submission {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Foreign key to User
-    @ManyToOne
-    @JoinColumn(name = "user_id")
-    private User user;
+    private Long userId;
 
-    @ManyToOne
-    @JoinColumn(name = "problem_id")
-    private Problem problem;
+    private Long problemId;
 
     private String sourceCode;
 
-    @ManyToOne
-    @JoinColumn(name = "language_id")
-    private Language language;
+    // @ManyToOne
+    // @JoinColumn(name = "languageId")
+    // private Language language;
 
-    @ManyToOne
-    @JoinColumn(name = "status_id")
-    private Status status;
+    private Long languageId;
+
+    // @ManyToOne
+    // @JoinColumn(name = "statusId")
+    // private Status status;
+
+    private Long statusId;
 
     private String stdin;
+
+    private String stdout;
+
+    private String stderr;
 
     private String token;
 
@@ -48,14 +52,18 @@ public class Submission {
     public Submission() {
     }
 
-    public Submission(User user, Problem problem, String code, Language language, Status status, String token) {
-        this.user = user;
-        this.problem = problem;
-        this.sourceCode = code;
-        this.language = language;
-        this.status = status;
+    public Submission(Long userId, Long problemId, String sourceCode, Long languageId, Long statusId, String stdin,
+            String stdout, String stderr, String token) {
+        this.userId = userId;
+        this.problemId = problemId;
+        this.sourceCode = sourceCode;
+        this.languageId = languageId;
+        this.statusId = statusId;
         this.sumbittedAt = LocalDate.now();
         this.updatedAt = LocalDate.now();
+        this.stdin = stdin;
+        this.stdout = stdout;
+        this.stderr = stderr;
         this.token = token;
     }
 
@@ -63,24 +71,24 @@ public class Submission {
         return id;
     }
 
-    public User getUser() {
-        return user;
+    public Long getUserId() {
+        return userId;
     }
 
-    public Problem getProblem() {
-        return problem;
+    public Long getProblemId() {
+        return problemId;
     }
 
     public String getSourceCode() {
         return sourceCode;
     }
 
-    public Language getLanguage() {
-        return language;
+    public Long getLanguageId() {
+        return languageId;
     }
 
-    public Status getStatus() {
-        return status;
+    public Long getStatusId() {
+        return statusId;
     }
 
     public LocalDate getSumbittedAt() {
@@ -91,16 +99,16 @@ public class Submission {
         return updatedAt;
     }
 
-    public void setSourceCode(String sourceCode) {
-        this.sourceCode = sourceCode;
+    public void setSourceCode(String code) {
+        this.sourceCode = code;
     }
 
-    public void setLanguage(Language language) {
-        this.language = language;
+    public void setLanguageId(Long languageId) {
+        this.languageId = languageId;
     }
 
-    public void setStatus(Status status) {
-        this.status = status;
+    public void setStatusId(Long statusId) {
+        this.statusId = statusId;
     }
 
     public void setUpdatedAt() {
@@ -115,15 +123,39 @@ public class Submission {
         this.token = token;
     }
 
+    public String getStdin() {
+        return stdin;
+    }
+
+    public void setStdin(String stdin) {
+        this.stdin = stdin;
+    }
+
+    public String getStdout() {
+        return stdout;
+    }
+
+    public void setStdout(String stdout) {
+        this.stdout = stdout;
+    }
+
+    public String getStderr() {
+        return stderr;
+    }
+
+    public void setStderr(String stderr) {
+        this.stderr = stderr;
+    }
+
     @Override
     public String toString() {
         return "Submission{" +
                 "id=" + id +
-                ", user=" + user +
-                ", problemId=" + problem.getId() +
+                ", userId=" + userId +
+                ", problemId=" + problemId +
                 ", code='" + sourceCode + '\'' +
-                ", language=" + language +
-                ", status=" + status +
+                ", languageId=" + languageId +
+                ", statusId=" + statusId +
                 ", sumbittedAt=" + sumbittedAt +
                 ", updatedAt=" + updatedAt +
                 '}';

@@ -28,8 +28,8 @@ public class SubmissionService {
 
     public void updateSubmission(Long id, Submission submission) {
         Submission submissionToUpdate = submissionRepository.findById(id).get();
-        submissionToUpdate.setLanguage(submission.getLanguage());
-        submissionToUpdate.setStatus(submission.getStatus());
+        submissionToUpdate.setLanguageId(submission.getLanguageId());
+        submissionToUpdate.setStatusId(submission.getStatusId());
         submissionToUpdate.setSourceCode(submission.getSourceCode());
         submissionToUpdate.setUpdatedAt();
         submissionRepository.save(submissionToUpdate);

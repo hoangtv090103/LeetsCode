@@ -21,6 +21,27 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.example.leetscode.model.Submission;
 import com.example.leetscode.service.SubmissionService;
 
+import java.util.Base64;
+
+class Token {
+    private String token;
+
+    public Token() {
+    }
+
+    public Token(String token) {
+        this.token = token;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
+    }
+}
+
 @RestController
 @RequestMapping("/api/v1/submissions")
 public class SubmissionController {
@@ -42,38 +63,59 @@ public class SubmissionController {
         this.submissionService = submissionService;
     }
 
-    public String getToken(Submission submission) throws IOException, InterruptedException {
+    public Submission getSubmissionFromJudge0(Submission submission) throws IOException, InterruptedException {
+        String sourceCode = submission.getSourceCode();
+
+        Long languageId = submission.getLanguageId();
+        String stdin = submission.getStdin();
+
+        // String base64SourceCode =
+        // java.util.Base64.getEncoder().encodeToString(sourceCode.getBytes());
+        // String base64Stdin =
+        // java.util.Base64.getEncoder().encodeToString(stdin.getBytes());
+
+        String submissionString = "{ \"source_code\": \"" + sourceCode + "\", \"language_id\": " + languageId
+                + ", \"stdin\": \"" + stdin + "\" }";
+
+        URI judge0UrlSubmission = URI.create(this.judge0UrlSubmission.toString() + "?base64_encoded=true&fields=*");
+
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(judge0UrlSubmission)
                 .header("Content-Type", "application/json")
                 .header("X-RapidAPI-Key", X_RapidAPI_Key)
                 .header("X-RapidAPI-Host", X_RapidAPI_Host)
-                .POST(HttpRequest.BodyPublishers.ofString(submission.toString()))
+                .POST(HttpRequest.BodyPublishers.ofString(submissionString))
                 .build();
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        String token = response.body();
-        return token;
-    }
+        String res = response.body();
 
-    public Submission getSubmissionFromJudge0(String token) throws IOException, InterruptedException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        Token tokenObject = objectMapper.readValue(res, Token.class);
+        String token = tokenObject.getToken();
+
         URI judge0UrlSubmissionToken = URI
-                .create(judge0UrlSubmission + "/" + token + "?base64_encoded=true" + "&fields=*");
-        HttpRequest request = HttpRequest.newBuilder()
+                .create(this.judge0UrlSubmission + "/" + token + "?base64_encoded=false"
+                        + "&fields=stdout,stderr,status_id,language_id");
+
+        request = HttpRequest.newBuilder()
                 .uri(judge0UrlSubmissionToken)
                 .header("X-RapidAPI-Key", X_RapidAPI_Key)
                 .header("X-RapidAPI-Host", X_RapidAPI_Host)
                 .build();
 
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
         String jsonString = response.body();
+        jsonString = jsonString.replace("source_code", "sourceCode");
+        jsonString = jsonString.replace("status_id", "statusId");
+        jsonString = jsonString.replace("language_id", "languageId");
+        objectMapper = new ObjectMapper();
 
-        ObjectMapper objectMapper = new ObjectMapper();
-
-        Submission submission = objectMapper.readValue(jsonString, Submission.class);
-
-        return submission;
+        Submission newSubmission = objectMapper.readValue(jsonString, Submission.class);
+        newSubmission.setSourceCode(new String(Base64.getDecoder().decode(sourceCode)));
+        newSubmission.setToken(token);
+        return newSubmission;
     }
 
     @GetMapping("/")
@@ -84,27 +126,15 @@ public class SubmissionController {
     @PostMapping("/")
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<Submission> addSubmission(@RequestBody Submission submission) {
-        // TODO: Need to  change attribute data type of token in Submission model
+        // TODO: Need to change attribute data type of token in Submission model
         // language -> languageId
         // status -> statusId
-        String submissionToken = null;
         try {
-            submissionToken = getToken(submission);
-            submission.setToken(submissionToken);
-
-            Submission submissionFromJudge0 = getSubmissionFromJudge0(submissionToken);
-
-            if (submissionFromJudge0.getStatus().getId() != null) {
-                submissionService.updateSubmission(submission.getId(), submissionFromJudge0);
-                return ResponseEntity.ok(submission);
-            } else {
-                submissionService.addSubmission(submission);
-                return ResponseEntity.ok(submission);
-            }
+            Submission submissionFromJudge0 = getSubmissionFromJudge0(submission);
+            submissionService.addSubmission(submissionFromJudge0);
+            return ResponseEntity.ok(submissionFromJudge0);
         } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
+            return ResponseEntity.badRequest().body(null);
         }
-        return null;
     }
-
 }
