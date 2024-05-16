@@ -1,0 +1,13 @@
+package com.example.leetscode;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class LeetscodeApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(LeetscodeApplication.class, args);
+	}
+
+}
