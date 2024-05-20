@@ -26,11 +26,12 @@ public class SubmissionService {
         return submissionRepository.findAll();
     }
 
+    public Submission getSubmissionById(Long id) {
+        return submissionRepository.findById(id).get();
+    }
+
     public void updateSubmission(Long id, Submission submission) {
         Submission submissionToUpdate = submissionRepository.findById(id).get();
-        submissionToUpdate.setLanguageId(submission.getLanguageId());
-        submissionToUpdate.setStatusId(submission.getStatusId());
-        submissionToUpdate.setSourceCode(submission.getSourceCode());
         submissionToUpdate.setUpdatedAt();
         submissionRepository.save(submissionToUpdate);
     }
