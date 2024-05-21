@@ -46,6 +46,7 @@ public class SubmissionController {
         this.objectMapper = new ObjectMapper();
     }
 
+    @SuppressWarnings("unchecked")
     public CompletableFuture<String> getSubmissionToken(Object submission) {
         try {
             URI judge0UrlSubmission = URI.create(this.judge0UrlSubmission + "?base64_encoded=true");
@@ -127,7 +128,6 @@ public class SubmissionController {
                     .completedFuture(submissionService.getSubmissionById(Long.parseLong(id)).getToken());
         } else {
             tokenFuture = CompletableFuture.completedFuture(id);
-
         }
 
         return tokenFuture.thenCompose(token -> {
