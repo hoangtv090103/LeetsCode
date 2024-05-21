@@ -5,7 +5,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -39,13 +39,6 @@ public class SubmissionController {
 
     @Value("${X-RapidAPI-Host}")
     private String X_RapidAPI_Host;
-
-    public String decodeBase64(String str) {
-        if (str == null) {
-            return "";
-        }
-        return new String(Base64.getDecoder().decode(str));
-    }
 
     public SubmissionController(SubmissionService submissionService) {
         this.submissionService = submissionService;
@@ -83,22 +76,60 @@ public class SubmissionController {
         }
     }
 
-    @GetMapping("/{id}")
-    public CompletableFuture<ResponseEntity<? extends Object>> getAllSubmissions(@PathVariable String id) {
-        try {
-            String token;
-            if (id.matches("\\d+")) {
-                Long idLong = Long.parseLong(id);
-                token = submissionService.getSubmissionById(idLong).getToken();
-            } else {
-                token = id;
-            }
+    @GetMapping("/")
+    public CompletableFuture<ResponseEntity<?>> getAllSubmissions() {
+        List<Submission> submissions = submissionService.getAllSubmissions();
 
-            URI judge0UrlSubmission = URI
-                    .create(this.judge0UrlSubmission.toString() + "/" + token + "?base64_encoded=false&fields=*");
+        String tokens = submissions.stream()
+                .map(Submission::getToken)
+                .limit(Math.min(submissions.size(), 20))
+                .reduce("", (acc, token) -> acc + token + ",");
+        tokens = tokens.substring(0, tokens.length() - 1); // Remove the last comma
+
+        URI uri = URI.create(judge0UrlSubmission + "/batch?tokens=" + tokens + "?base64_encoded=false&fields=*");
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(uri)
+                .header("Content-Type", "application/json")
+                .header("X-RapidAPI-Key", X_RapidAPI_Key)
+                .header("X-RapidAPI-Host", X_RapidAPI_Host)
+                .GET()
+                .build();
+
+        return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenApply(HttpResponse::body)
+                .thenApply(res -> {
+                    try {
+                        Object obj = objectMapper.readValue(res, Object.class);
+                        return ResponseEntity.ok(obj);
+                    } catch (IOException e) {
+                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                .body("Error processing response JSON");
+                    }
+                })
+                .exceptionally(e -> {
+                    System.err.println("Error while making HTTP request: " + e.getMessage());
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .body("Error while making HTTP request");
+                });
+    }
+
+    @GetMapping("/{id}")
+    public CompletableFuture<ResponseEntity<?>> getAllSubmissions(@PathVariable String id) {
+        CompletableFuture<String> tokenFuture;
+
+        if (id.matches("\\d+")) {
+            tokenFuture = CompletableFuture.completedFuture(Long.parseLong(id) + "");
+        } else {
+            tokenFuture = CompletableFuture.completedFuture(id);
+
+        }
+
+        return tokenFuture.thenCompose(token -> {
+            URI uri = URI.create(judge0UrlSubmission + "/" + token + "?base64_encoded=false&fields=*");
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(judge0UrlSubmission)
+                    .uri(uri)
                     .header("Content-Type", "application/json")
                     .header("X-RapidAPI-Key", X_RapidAPI_Key)
                     .header("X-RapidAPI-Host", X_RapidAPI_Host)
@@ -121,10 +152,12 @@ public class SubmissionController {
                         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                                 .body("Error while making HTTP request");
                     });
-        } catch (NumberFormatException e) {
-            return CompletableFuture
-                    .completedFuture(ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid ID format"));
-        }
+        }).exceptionally(e -> {
+            if (e.getCause() instanceof NumberFormatException) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid ID format");
+            }
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error processing request");
+        });
     }
 
     @PostMapping("/")
@@ -132,29 +165,12 @@ public class SubmissionController {
     public ResponseEntity<String> addSubmission(@RequestBody Object submission) {
         try {
             CompletableFuture<String> token = getSubmissionToken(submission);
-            token.thenAccept(tokenStr ->
-                submissionService.addSubmission(new Submission(null, null, tokenStr))
-            );
-            
+            token.thenAccept(tokenStr -> submissionService.addSubmission(new Submission(null, null, tokenStr)));
+
             return ResponseEntity.status(HttpStatus.CREATED).body(token.get());
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-    }
-}
-
-class Token {
-    private String token;
-
-    public Token() {
-    }
-
-    public String getToken() {
-        return token;
-    }
-
-    public void setToken(String token) {
-        this.token = token;
     }
 }
