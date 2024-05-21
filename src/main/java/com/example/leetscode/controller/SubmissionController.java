@@ -5,10 +5,9 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.security.KeyStore.Entry;
 import java.util.Base64;
-import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -54,74 +53,91 @@ public class SubmissionController {
         this.objectMapper = new ObjectMapper();
     }
 
-    public String getSubmissionToken(Object submission) throws IOException, InterruptedException {
-        String token = "";
+    public CompletableFuture<String> getSubmissionToken(Object submission) {
+        try {
+            URI judge0UrlSubmission = URI.create(this.judge0UrlSubmission + "?base64_encoded=true");
 
-        URI judge0UrlSubmission = URI.create(this.judge0UrlSubmission.toString() + "?base64_encoded=true");
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(judge0UrlSubmission)
+                    .header("Content-Type", "application/json")
+                    .header("X-RapidAPI-Key", X_RapidAPI_Key)
+                    .header("X-RapidAPI-Host", X_RapidAPI_Host)
+                    .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(submission)))
+                    .build();
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(judge0UrlSubmission)
-                .header("Content-Type", "application/json")
-                .header("X-RapidAPI-Key", X_RapidAPI_Key)
-                .header("X-RapidAPI-Host", X_RapidAPI_Host)
-                .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(submission)))
-                .build();
-
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        String res = response.body();
-
-        Object obj = objectMapper.readValue(res, Object.class);
-
-        // Get the token from the Object obj
-        for (Map.Entry<String, Object> entry : ((java.util.Map<String, Object>) obj).entrySet()) {
-            if (entry.getKey().equals("token")) {
-                token = (String) entry.getValue();
-            }
+            return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .thenApply(HttpResponse::body)
+                    .thenApply(res -> {
+                        try {
+                            Object obj = objectMapper.readValue(res, Object.class);
+                            // Get the token from the Object obj
+                            return (String) ((Map<String, Object>) obj).get("token");
+                        } catch (IOException e) {
+                            throw new RuntimeException("Error processing response JSON", e);
+                        }
+                    });
+        } catch (Exception e) {
+            CompletableFuture<String> future = new CompletableFuture<>();
+            future.completeExceptionally(e);
+            return future;
         }
-
-        return token;
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Object> getAllSubmissions(@PathVariable String id) throws IOException, InterruptedException {
-        String token = "";
-        if (id.matches("\\d+")) {
-            Long idLong = Long.parseLong(id);
-            token = submissionService.getSubmissionById(idLong).getToken();
-        } else {
-            token = id;
+    public CompletableFuture<ResponseEntity<? extends Object>> getAllSubmissions(@PathVariable String id) {
+        try {
+            String token;
+            if (id.matches("\\d+")) {
+                Long idLong = Long.parseLong(id);
+                token = submissionService.getSubmissionById(idLong).getToken();
+            } else {
+                token = id;
+            }
+
+            URI judge0UrlSubmission = URI
+                    .create(this.judge0UrlSubmission.toString() + "/" + token + "?base64_encoded=false&fields=*");
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(judge0UrlSubmission)
+                    .header("Content-Type", "application/json")
+                    .header("X-RapidAPI-Key", X_RapidAPI_Key)
+                    .header("X-RapidAPI-Host", X_RapidAPI_Host)
+                    .GET()
+                    .build();
+
+            return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .thenApply(HttpResponse::body)
+                    .thenApply(res -> {
+                        try {
+                            Object obj = objectMapper.readValue(res, Object.class);
+                            return ResponseEntity.ok(obj);
+                        } catch (IOException e) {
+                            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                    .body("Error processing response JSON");
+                        }
+                    })
+                    .exceptionally(e -> {
+                        System.err.println("Error while making HTTP request: " + e.getMessage());
+                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                .body("Error while making HTTP request");
+                    });
+        } catch (NumberFormatException e) {
+            return CompletableFuture
+                    .completedFuture(ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid ID format"));
         }
-
-        URI judge0UrlSubmission = URI
-                .create(this.judge0UrlSubmission.toString() + "/" + token + "?base64_encoded=false&fields=*");
-
-        HttpClient client = HttpClient.newHttpClient();
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(judge0UrlSubmission)
-                .header("Content-Type", "application/json")
-                .header("X-RapidAPI-Key", X_RapidAPI_Key)
-                .header("X-RapidAPI-Host", X_RapidAPI_Host)
-                .GET()
-                .build();
-
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        String res = response.body();
-
-        // Convert the response to json
-        Object obj = objectMapper.readValue(res, Object.class);
-
-        return ResponseEntity.ok(obj);
     }
 
     @PostMapping("/")
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<String> addSubmission(@RequestBody Object submission) {
         try {
-            String token = getSubmissionToken(submission);
-            submissionService.addSubmission(new Submission(null, null, token));
-
-            return ResponseEntity.ok(token);
-        } catch (IOException | InterruptedException e) {
+            CompletableFuture<String> token = getSubmissionToken(submission);
+            token.thenAccept(tokenStr ->
+                submissionService.addSubmission(new Submission(null, null, tokenStr))
+            );
+            
+            return ResponseEntity.status(HttpStatus.CREATED).body(token.get());
+        } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
