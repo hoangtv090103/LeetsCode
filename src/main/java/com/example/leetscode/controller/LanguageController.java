@@ -7,6 +7,7 @@ import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,6 +37,7 @@ public class LanguageController {
     }
 
     @GetMapping("/")
+    @CrossOrigin(origins = "http://localhost:3000")
     public CompletableFuture<ResponseEntity<? extends Object>> getLanguages() throws Exception {
         try {
             HttpRequest request = HttpRequest.newBuilder()
