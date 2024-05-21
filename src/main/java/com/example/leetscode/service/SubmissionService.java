@@ -35,4 +35,9 @@ public class SubmissionService {
         submissionToUpdate.setUpdatedAt();
         submissionRepository.save(submissionToUpdate);
     }
+
+    // Get all tokens
+    public List<String> getAllTokens() {
+        return submissionRepository.findAll().stream().map(Submission::getToken).toList();
+    }
 }

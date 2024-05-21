@@ -78,15 +78,19 @@ public class SubmissionController {
 
     @GetMapping("/")
     public CompletableFuture<ResponseEntity<?>> getAllSubmissions() {
-        List<Submission> submissions = submissionService.getAllSubmissions();
+        List<String> tokenList = submissionService.getAllTokens();
 
-        String tokens = submissions.stream()
-                .map(Submission::getToken)
-                .limit(Math.min(submissions.size(), 20))
-                .reduce("", (acc, token) -> acc + token + ",");
+        if (tokenList.isEmpty()) {
+            return CompletableFuture.completedFuture(ResponseEntity.ok(List.of()));
+        }
+
+        String tokens = tokenList.stream().reduce("", (acc, token) -> acc + "" + token + ",");
+
+        tokens = tokens.substring(0, tokens.length() - 1);
+
+        URI uri = URI.create(judge0UrlSubmission + "/batch?tokens=" + tokens + "&base64_encoded=false&fields=*");
+
         tokens = tokens.substring(0, tokens.length() - 1); // Remove the last comma
-
-        URI uri = URI.create(judge0UrlSubmission + "/batch?tokens=" + tokens + "?base64_encoded=false&fields=*");
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(uri)
@@ -119,7 +123,8 @@ public class SubmissionController {
         CompletableFuture<String> tokenFuture;
 
         if (id.matches("\\d+")) {
-            tokenFuture = CompletableFuture.completedFuture(Long.parseLong(id) + "");
+            tokenFuture = CompletableFuture
+                    .completedFuture(submissionService.getSubmissionById(Long.parseLong(id)).getToken());
         } else {
             tokenFuture = CompletableFuture.completedFuture(id);
 
