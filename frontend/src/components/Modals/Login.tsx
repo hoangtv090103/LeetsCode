@@ -1,8 +1,14 @@
+import { authModalState } from "@/atoms/authModalAtom";
 import * as React from "react";
+import { useSetRecoilState } from "recoil";
 
 type ILoginProps = {};
 
 export function Login(props: ILoginProps) {
+  const setAuthModalState = useSetRecoilState(authModalState);
+  const handleClick = (type: "login" | "signup" | "resetPassword") => {
+    setAuthModalState((prev) => ({ ...prev, type }));
+  };
   return (
     <div>
       <form className="space-y-6 px-6 py-5">
@@ -17,14 +23,14 @@ export function Login(props: ILoginProps) {
           <input
             type="email"
             id="email"
-            className="border-2 outline-none sm:text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 bg-gray-600 border-gray-500 placeholder-gray-400 text-gray-300 text-white"
+            className="border-2 outline-none sm:text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 bg-gray-600 border-gray-500 placeholder-gray-400 text-white"
             placeholder="name@company.com"
           />
         </div>
         <div>
           <label
             htmlFor="password"
-            className="text-usm font-medium block mb-2 text-gray-300"
+            className="text-sm font-medium block mb-2 text-gray-300"
           >
             Your Password
           </label>
@@ -32,7 +38,7 @@ export function Login(props: ILoginProps) {
             type="password"
             name="password"
             id="password"
-            className="border-2 outline-none sm:text-sm rounded-lg focus:ring-blue-500 focus border-blue-500 block w-full p-2.5 bg-gray-600 border-gray-500 placeholder-gray-400 text-white"
+            className="border-2 outline-none sm:text-sm rounded-lg focus:ring-blue-500 focus focus:border-blue-500 block w-full p-2.5 bg-gray-600 border-gray-500 placeholder-gray-400 text-white"
             placeholder="********"
           />
         </div>
@@ -43,18 +49,27 @@ export function Login(props: ILoginProps) {
           Login
         </button>
 
-        <button className="flex w-full justify-end">
-          <a href="#" className="text-sm block text-brand-orange hover:underline w-full text-right">
+        <button
+          className="flex w-full justify-end"
+          onClick={() => handleClick("resetPassword")}
+        >
+          <a
+            href="#"
+            className="text-sm block text-brand-orange hover:underline w-full text-right"
+          >
             Forgot Password?
           </a>
         </button>
         <div className="text-sm font-medium text-gray-300">
-          Not Registered? {" "}
-          <a href="#" className="text-blue-700 hover:underline">
+          Not Registered?{" "}
+          <a
+            href="#"
+            className="text-blue-700 hover:underline"
+            onClick={() => handleClick("signup")}
+          >
             Create Account
           </a>
         </div>
-
       </form>
     </div>
   );

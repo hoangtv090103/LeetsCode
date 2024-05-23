@@ -1,6 +1,13 @@
+// "use client"; 
+/**
+ * Error: 
+  × You are attempting to export "metadata" from a component marked with "use client", which is disallowed. Either remove the export, or the "use client" directive. Read more: https://nextjs.org/
+ */
+
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import RecoilContextProvider from "@/RecoilContextProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -16,7 +23,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <RecoilContextProvider>{children}</RecoilContextProvider>
+      </body>
     </html>
   );
 }
