@@ -36,7 +36,7 @@ public class LanguageController {
         this.objectMapper = new ObjectMapper();
     }
 
-    @GetMapping("/")
+    @GetMapping
     @CrossOrigin(origins = "http://localhost:3000")
     public CompletableFuture<ResponseEntity<? extends Object>> getLanguages() throws Exception {
         try {

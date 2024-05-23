@@ -2,6 +2,7 @@ package com.example.leetscode.model;
 
 import java.time.LocalDate;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -14,10 +15,14 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String fullName;
+    private String displayName;
     private String username;
     private String password;
+
+    @Column(unique = true)
     private String email;
+
+    @Column(unique = true)
     private String token;
 
     private LocalDate createdAt;
@@ -27,7 +32,7 @@ public class User {
     }
 
     public User(String fullName, String username, String password, String email, String token) {
-        this.fullName = fullName;
+        this.displayName = fullName;
         this.username = username;
         this.password = password;
         this.email = email;
@@ -41,12 +46,12 @@ public class User {
         return id;
     }
 
-    public String getFullName() {
-        return fullName;
+    public String getDisplayName() {
+        return displayName;
     }
 
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
+    public void setDisplayName(String fullName) {
+        this.displayName = fullName;
     }
 
     public String getUsername() {

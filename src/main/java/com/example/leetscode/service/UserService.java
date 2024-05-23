@@ -2,6 +2,7 @@ package com.example.leetscode.service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 // import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -9,12 +10,14 @@ import org.springframework.stereotype.Service;
 
 import com.example.leetscode.model.User;
 import com.example.leetscode.repository.UserRepository;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 @Service
 public class UserService {
     // UserService sẽ chứa các phương thức để thao tác với User
     // Ví dụ: tìm kiếm User, thêm User, xóa User, cập nhật User
-    // UserService sẽ gọi các phương thức từ UserRepository để thao tác với cơ sở dữ liệu
+    // UserService sẽ gọi các phương thức từ UserRepository để thao tác với cơ sở dữ
+    // liệu
 
     @Autowired // Sử dụng để tiêm UserRepository vào UserService
     private UserRepository userRepository;
@@ -26,9 +29,11 @@ public class UserService {
     public Optional<User> getUserById(Long id) {
         return userRepository.findById(id);
     }
-    
+
     public User addUser(User user) {
-        // user.setPassword(new BCryptPasswordEncoder().encode(user.getPassword()));
+        // Generate token
+        user.setToken(UUID.randomUUID().toString());
+        user.setPassword(new BCryptPasswordEncoder().encode(user.getPassword()));
         return userRepository.save(user);
     }
 
@@ -36,9 +41,13 @@ public class UserService {
         User userToUpdate = userRepository.findById(judge0id).get();
         userToUpdate.setUsername(user.getUsername());
         userToUpdate.setEmail(user.getEmail());
-        // userToUpdate.setPassword(new BCryptPasswordEncoder().encode(user.getPassword()));
+        // userToUpdate.setPassword(new
+        // BCryptPasswordEncoder().encode(user.getPassword()));
         userRepository.save(userToUpdate);
     }
 
-    
+    public void deleteUser(Long id) {
+        userRepository.deleteById(id);
+    }
+
 }
